@@ -100,12 +100,51 @@ function addEvents() {
 
 addEvents();
 
+function shuffleArray(array) {
+	const shuffled = [...array];
+	for (let i = shuffled.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+	}
+	return shuffled;
+}
+
 function generateAndDisplay() {
 	container.innerHTML = '<div class="loading">Generating palettes...</div>';
 	stats.textContent = '';
 
+	// Get control values
+	const shufflePalettes = document.getElementById('shufflePalettes').checked;
+	const methodRadio = document.querySelector('input[name="paletteMethod"]:checked');
+	const method = methodRadio ? methodRadio.value : 'algorithm';
+
 	const startTime = performance.now();
-	const palettes = paletteGenerator.generatePalettes();
+	
+	// Generate palettes based on selected method
+	let palettes;
+	if (method === 'random') {
+		// Generate random palettes
+		palettes = paletteGenerator.generateRandomPalettes(100);
+	} else if (method === 'combined') {
+		// Generate 50 algorithm palettes and 50 random palettes
+		const algorithmPalettes = paletteGenerator.generatePalettes();
+		const randomPalettes = paletteGenerator.generateRandomPalettes(50);
+		
+		// Take first 50 algorithm palettes if more than 50
+		const algorithm50 = algorithmPalettes.slice(0, 50);
+		
+		// Combine both arrays
+		palettes = [...algorithm50, ...randomPalettes];
+	} else {
+		// Use algorithm method
+		palettes = paletteGenerator.generatePalettes();
+	}
+
+	// Shuffle if checkbox is checked
+	if (shufflePalettes) {
+		palettes = shuffleArray(palettes);
+	}
+
 	const endTime = performance.now();
 	const generationTime = ((endTime - startTime) / 1000).toFixed(2);
 
@@ -142,5 +181,14 @@ function generateAndDisplay() {
 
 	container.appendChild(palettesGrid);
 
-	stats.textContent = `Generated ${palettes.length} palettes in ${generationTime}s`;
+	let methodText;
+	if (method === 'random') {
+		methodText = 'random';
+	} else if (method === 'combined') {
+		methodText = 'combined (50 algorithm + 50 random)';
+	} else {
+		methodText = 'algorithm';
+	}
+	const shuffleText = shufflePalettes ? ' (shuffled)' : '';
+	stats.textContent = `Generated ${palettes.length} palettes using ${methodText} method${shuffleText} in ${generationTime}s`;
 }

@@ -22,6 +22,31 @@
 <body>
 	<div class="header">
 		<h1>🎨 Palette Generator</h1>
+		<div class="palette-options">
+			<div class="palette-option-group">
+				<label class="palette-option-label">
+					<input type="checkbox" id="shufflePalettes" checked>
+					<span>Shuffling the final palettes</span>
+				</label>
+			</div>
+			<div class="palette-option-group">
+				<label class="palette-option-label">Method:</label>
+				<div class="palette-radio-group">
+					<label class="palette-radio-label">
+						<input type="radio" name="paletteMethod" value="algorithm" id="methodAlgorithm" checked>
+						<span>Algorithm</span>
+					</label>
+					<label class="palette-radio-label">
+						<input type="radio" name="paletteMethod" value="random" id="methodRandom">
+						<span>Random</span>
+					</label>
+					<label class="palette-radio-label">
+						<input type="radio" name="paletteMethod" value="combined" id="methodCombined">
+						<span>Combined</span>
+					</label>
+				</div>
+			</div>
+		</div>
 		<button class="generate-btn" id="generateBtn">Generate 100 Palettes</button>
 		<div class="stats" id="stats"></div>
 	</div>
