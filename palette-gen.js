@@ -1,5 +1,4 @@
 export default class PaletteGenerator {
-
 	constructor(data) {
 		this.parseColors(data.colors[0]);
 	}
@@ -14,12 +13,12 @@ export default class PaletteGenerator {
 	 * @param {string[]} colors.hex
 	 */
 	parseColors(colors) {
-		console.log(colors);
+		window.colorName = {};
 		for (const category in colors) {
 			const hexArray = colors[category].hex;
 			for (let i = 0; i < hexArray.length; i++) {
 				const hex = hexArray[i];
-				const hsl = this.hexToHsl(hex);
+				const hsl = window.h.hexToHsl(hex);
 				const lightness = hsl.l;
 				const saturation = hsl.s;
 				// Categorize colors
@@ -28,10 +27,14 @@ export default class PaletteGenerator {
 					continue;
 				} else if (lightness >= 88 && lightness <= 97) {
 					window.backgroundColors.push(hex);
-				} else if (lightness >= 34 && lightness <= 87 && saturation > 20) {
+					window.colorName[hex] = colors[category].name;
+				} else if (lightness >= 34 && lightness <= 87 && saturation > 30) {
+					if (category.includes('grayshades')) continue;
 					window.accentColors.push(hex);
+					window.colorName[hex] = colors[category].name;
 				} else if (lightness >= 0 && lightness < 34) {
 					window.darkBackgroundColors.push(hex);
+					window.colorName[hex] = colors[category].name;
 				}
 
 				window.allColors.push(hex);
@@ -39,105 +42,318 @@ export default class PaletteGenerator {
 		}
 	}
 
-	hexToHsl(hex) {
-		const hexResult = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-		const rgb = {
-			r: parseInt(hexResult[1], 16),
-			g: parseInt(hexResult[2], 16),
-			b: parseInt(hexResult[3], 16),
-		};
-		const r = rgb.r / 255;
-		const g = rgb.g / 255;
-		const b = rgb.b / 255;
-		const max = Math.max(r, g, b);
-		const min = Math.min(r, g, b);
-		let h,
-			s,
-			l = (max + min) / 2;
-		if (max === min) {
-			h = s = 0; // achromatic
-		} else {
-			const d = max - min;
-			s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-			switch (max) {
-				case r:
-					h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-					break;
-				case g:
-					h = ((b - r) / d + 2) / 6;
-					break;
-				case b:
-					h = ((r - g) / d + 4) / 6;
-					break;
-			}
-		}
-
-		return {
-			h: Math.floor(h * 360),
-			s: Math.floor(s * 100),
-			l: Math.floor(l * 100),
-		};
-	}
-
 	// #endregion
 
 	// #region generate 2
-	generatePalettes() {
+	generatePalettes(constants = {}) {
 		let palettes = [];
+
+		// Default values
+		const defaultConstants = {
+			LIGHT_BG_LIGHTNESS: 97,
+			LIGHTEST_BG_LIGHTNESS: 90,
+			DARK_BG_LIGHTNESS: 20,
+			DARKEST_BG_LIGHTNESS: 15,
+			ANALOGOUS_HUE_RANGE: 30,
+			ACCENT_AND_BACKGROUND_CONTRAST_RATIO: 1.4,
+			DEFAULT_DARK_BG_COLOR: '#292929',
+		};
+
+		const mergedConstants = {...defaultConstants, ...constants};
 
 		for (let i = 0; i < window.accentColors.length; i++) {
 			const accentColor = window.accentColors[i];
-			const newPalettes = this.generatePalettesWithAlgorithm(accentColor);
+			const newPalettes = this.generatePalettesWithAlgorithm_v2(accentColor, mergedConstants);
 			palettes = palettes.concat(newPalettes);
 		}
 
 		return palettes;
 	}
 
-	generatePalettesWithAlgorithm(accentColor) {
-		const accentHsl = this.hexToHsl(accentColor);
-		
+	generatePalettesWithAlgorithm_v2(accentColor, constants = {}) {
+		const LIGHT_BG_LIGHTNESS = constants.LIGHT_BG_LIGHTNESS ?? 97;
+		const LIGHTEST_BG_LIGHTNESS = constants.LIGHTEST_BG_LIGHTNESS ?? 98;
+		const DARK_BG_LIGHTNESS = constants.DARK_BG_LIGHTNESS ?? 20;
+		const DARKEST_BG_LIGHTNESS = constants.DARKEST_BG_LIGHTNESS ?? 15;
+		const ANALOGOUS_HUE_RANGE = constants.ANALOGOUS_HUE_RANGE ?? 30;
+		const ACCENT_AND_BACKGROUND_CONTRAST_RATIO = constants.ACCENT_AND_BACKGROUND_CONTRAST_RATIO ?? 1.4;
+		const DEFAULT_DARK_BG_COLOR = constants.DEFAULT_DARK_BG_COLOR ?? '#292929';
+
+		const accentHsl = window.h.hexToHsl(accentColor);
+
 		// Create base palettes
-		const lightBgColor = this.hslToHex(accentHsl.h, accentHsl.s, 97);
+		const lightBgColor = window.h.hslToHex(accentHsl.h, accentHsl.s, LIGHT_BG_LIGHTNESS);
+		const darkBgColor = DEFAULT_DARK_BG_COLOR;
+		const accentColorName = window.colorName[accentColor];
+
+		// new colors
+		const complementaryAccentColors = window.accentColors.filter(color => {
+			const colorHsl = window.h.hexToHsl(color);
+			const hueRange = [
+				(accentHsl.h + 180 - ANALOGOUS_HUE_RANGE) % 360,
+				(accentHsl.h + 180 + ANALOGOUS_HUE_RANGE) % 360,
+			];
+			let colorInRange = false;
+			if (hueRange[0] < hueRange[1]) {
+				colorInRange = colorHsl.h >= hueRange[0] && colorHsl.h <= hueRange[1];
+			} else {
+				colorInRange = colorHsl.h >= hueRange[0] || colorHsl.h <= hueRange[1];
+			}
+			return colorInRange && window.h.getContrastRatio(color, '#FFFFFF') > ACCENT_AND_BACKGROUND_CONTRAST_RATIO;
+		});
+
+		let analogousAccentColors = window.accentColors.filter(color => {
+			const colorHsl = window.h.hexToHsl(color);
+			return (
+				accentHsl.h - colorHsl.h > ANALOGOUS_HUE_RANGE &&
+				accentHsl.h - colorHsl.h < ANALOGOUS_HUE_RANGE * 2 &&
+				window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
+			);
+		});
+
+		let analogousBackDarkBgColors = window.darkBackgroundColors.filter(color => {
+			const colorHsl = window.h.hexToHsl(color);
+			return (
+				accentHsl.h - colorHsl.h > ANALOGOUS_HUE_RANGE &&
+				accentHsl.h - colorHsl.h < ANALOGOUS_HUE_RANGE * 2 &&
+				window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
+			);
+		});
+		let analogousForwardDarkBgColors = window.darkBackgroundColors.filter(color => {
+			const colorHsl = window.h.hexToHsl(color);
+			return (
+				colorHsl.h - accentHsl.h > ANALOGOUS_HUE_RANGE &&
+				colorHsl.h - accentHsl.h < ANALOGOUS_HUE_RANGE * 2 &&
+				window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
+			);
+		});
+
+		let analogousDarkBgColors = window.darkBackgroundColors.filter(color => {
+			const colorHsl = window.h.hexToHsl(color);
+			return accentHsl.h + ANALOGOUS_HUE_RANGE > colorHsl.h && accentHsl.h - ANALOGOUS_HUE_RANGE < colorHsl.h;
+		});
+
+		const basePalettes = {
+			light: {
+				bgColor: lightBgColor,
+				buttonColor: accentColor,
+				textColor: DEFAULT_DARK_BG_COLOR,
+
+				secondBgColor: '#FFFFFF',
+				secondButtonColor: accentColor,
+				secondTextColor: DEFAULT_DARK_BG_COLOR,
+
+				colorName: accentColorName,
+				accent: accentColor,
+			},
+			dark: {
+				bgColor: darkBgColor,
+				buttonColor: accentColor,
+				textColor: '#FFFFFF',
+
+				secondBgColor: window.h.hslToHex(accentHsl.h, accentHsl.s, LIGHT_BG_LIGHTNESS),
+				secondButtonColor: accentColor,
+				secondTextColor: '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+			},
+			bright: {
+				bgColor: accentColor,
+				buttonColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				textColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+
+				secondBgColor: '#FFFFFF',
+				secondButtonColor: accentColor,
+				secondTextColor: '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+			},
+		};
+
+		if (complementaryAccentColors.length === 0) return Object.keys(basePalettes).map(key => basePalettes[key]);
+
+		const secondAccentColor =
+			complementaryAccentColors[Math.floor(Math.random() * complementaryAccentColors.length)];
+		const secondAccentColorHsl = window.h.hexToHsl(secondAccentColor);
+
+		if (
+			window.h.getContrastRatio(
+				window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, 90),
+				accentColor
+			) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
+		) {
+			basePalettes['light_2'] = {
+				bgColor: window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, LIGHT_BG_LIGHTNESS),
+				buttonColor: accentColor,
+				textColor: '#000000',
+
+				secondBgColor: window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, LIGHTEST_BG_LIGHTNESS),
+				secondButtonColor: accentColor,
+				secondTextColor: '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+			};
+		}
+		if (
+			window.h.getContrastRatio(
+				window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, DARK_BG_LIGHTNESS),
+				accentColor
+			) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
+		) {
+			basePalettes['dark_2'] = {
+				bgColor: window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s - 20, DARKEST_BG_LIGHTNESS),
+				buttonColor: accentColor,
+				textColor: '#FFFFFF',
+
+				secondBgColor: window.h.hslToHex(
+					secondAccentColorHsl.h,
+					secondAccentColorHsl.s - 20,
+					DARK_BG_LIGHTNESS
+				),
+				secondButtonColor: accentColor,
+				secondTextColor: '#FFFFFF',
+
+				colorName: accentColorName,
+				accent: accentColor,
+			};
+		}
+
+		if (analogousDarkBgColors.length > 2) {
+			const thirdBgColor = analogousDarkBgColors[Math.floor(Math.random() * analogousDarkBgColors.length)];
+			analogousDarkBgColors = analogousDarkBgColors.filter(color => color !== thirdBgColor);
+			const thirdBgColor2 = analogousDarkBgColors[Math.floor(Math.random() * analogousDarkBgColors.length)];
+
+			if (
+				window.h.getContrastRatio(accentColor, thirdBgColor) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO &&
+				window.h.getContrastRatio(thirdBgColor2, accentColor) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO &&
+				window.h.getContrastRatio(thirdBgColor, thirdBgColor2) > 1.1
+			) {
+				basePalettes['bright_2'] = {
+					bgColor: thirdBgColor,
+					buttonColor: accentColor,
+					textColor: '#FFFFFF',
+
+					secondBgColor: thirdBgColor2,
+					secondButtonColor: accentColor,
+					secondTextColor: '#FFFFFF',
+
+					colorName: accentColorName,
+					accent: accentColor,
+				};
+			}
+		}
+
+		console.log(analogousBackDarkBgColors, analogousForwardDarkBgColors);
+
+		if (analogousBackDarkBgColors.length !== 0 && analogousForwardDarkBgColors.length !== 0) {
+			const fourthBgColor =
+				analogousBackDarkBgColors[Math.floor(Math.random() * analogousBackDarkBgColors.length)];
+			analogousBackDarkBgColors = analogousBackDarkBgColors.filter(color => color !== fourthBgColor);
+			const fourthBgColor2 =
+				analogousForwardDarkBgColors[Math.floor(Math.random() * analogousForwardDarkBgColors.length)];
+
+			if (window.h.getContrastRatio(fourthBgColor, fourthBgColor2) > 1.1) {
+				basePalettes['dark_3'] = {
+					bgColor: fourthBgColor,
+					buttonColor: accentColor,
+					textColor: '#FFFFFF',
+
+					secondBgColor: fourthBgColor2,
+					secondButtonColor: accentColor,
+					secondTextColor: '#FFFFFF',
+
+					colorName: accentColorName,
+					accent: accentColor,
+				};
+			}
+		}
+
+		if (analogousAccentColors.length > 0) {
+			const analogousAccentColor =
+				analogousAccentColors[Math.floor(Math.random() * analogousAccentColors.length)];
+			const analogousAccentColorHsl = window.h.hexToHsl(analogousAccentColor);
+			analogousAccentColors = analogousAccentColors.filter(color => color !== analogousAccentColor);
+			if (analogousAccentColors.length === 0) return Object.keys(basePalettes).map(key => basePalettes[key]);
+			const analogousAccentColor2 =
+				analogousAccentColors[Math.floor(Math.random() * analogousAccentColors.length)];
+			const analogousAccentColor2Hsl = window.h.hexToHsl(analogousAccentColor2);
+
+			basePalettes['bright_3'] = {
+				bgColor: window.h.hslToHex(analogousAccentColorHsl.h, analogousAccentColorHsl.s, DARK_BG_LIGHTNESS),
+				buttonColor: accentColor,
+				textColor: '#FFFFFF',
+
+				secondBgColor: window.h.hslToHex(
+					analogousAccentColor2Hsl.h,
+					analogousAccentColor2Hsl.s,
+					DARKEST_BG_LIGHTNESS
+				),
+				secondButtonColor: accentColor,
+				secondTextColor: '#FFFFFF',
+
+				colorName: accentColorName,
+				accent: accentColor,
+			};
+		}
+
+		return Object.keys(basePalettes).map(key => basePalettes[key]);
+	}
+
+	generatePalettesWithAlgorithm(accentColor) {
+		const accentHsl = window.h.hexToHsl(accentColor);
+
+		// Create base palettes
+		const lightBgColor = window.h.hslToHex(accentHsl.h, accentHsl.s, 97);
 		const darkBgColor = '#292929';
-		
+
 		// Adjust accent color for contrast with backgrounds
 		const adjustedAccentForLight = this.adjustColorForContrast(accentColor, lightBgColor);
 		const adjustedAccentForDark = this.adjustColorForContrast(accentColor, darkBgColor);
 		const adjustedAccentForWhite = this.adjustColorForContrast(accentColor, '#FFFFFF');
-		
+
 		const basePalettes = {
 			light: {
 				bgColor: lightBgColor,
 				buttonColor: adjustedAccentForLight,
-				textColor: this.hslToHex(accentHsl.h, accentHsl.s, 18),
+				textColor: window.h.hslToHex(accentHsl.h, accentHsl.s, 18),
 
 				secondBgColor: '#FFFFFF',
 				secondButtonColor: adjustedAccentForWhite,
-				secondTextColor: this.hslToHex(accentHsl.h, accentHsl.s, 18),
+				secondTextColor: window.h.hslToHex(accentHsl.h, accentHsl.s, 18),
 			},
 			dark: {
 				bgColor: darkBgColor,
 				buttonColor: adjustedAccentForDark,
 				textColor: '#FFFFFF',
 
-				secondBgColor: this.hslToHex(accentHsl.h, accentHsl.s, 97),
+				secondBgColor: window.h.hslToHex(accentHsl.h, accentHsl.s, 97),
 				secondButtonColor: adjustedAccentForLight,
 				secondTextColor: '#292929',
 			},
 			bright: {
 				bgColor: accentColor,
-				buttonColor: this.getContrastRatio(accentColor, '#ffffff') > this.getContrastRatio(accentColor, '#000000') ? '#FFFFFF' : '#000000',
-				textColor: this.getContrastRatio(accentColor, '#ffffff') > this.getContrastRatio(accentColor, '#000000') ? '#FFFFFF' : '#000000',
+				buttonColor:
+					window.h.getContrastRatio(accentColor, '#ffffff') >
+					window.h.getContrastRatio(accentColor, '#000000')
+						? '#FFFFFF'
+						: '#000000',
+				textColor:
+					window.h.getContrastRatio(accentColor, '#ffffff') >
+					window.h.getContrastRatio(accentColor, '#000000')
+						? '#FFFFFF'
+						: '#000000',
 
 				secondBgColor: '#FFFFFF',
 				secondButtonColor: adjustedAccentForWhite,
 				secondTextColor: '#000000',
 			},
-		}
+		};
 
 		const secondAccentColors = window.accentColors.filter(color => {
-			const colorHsl = this.hexToHsl(color);
+			const colorHsl = window.h.hexToHsl(color);
 			const hueRange = [(accentHsl.h + 165) % 360, (accentHsl.h + 195) % 360];
 			return colorHsl.h >= hueRange[0] && colorHsl.h <= hueRange[1];
 		});
@@ -145,25 +361,28 @@ export default class PaletteGenerator {
 		let secondPalettes = null;
 
 		if (secondAccentColors.length === 0) {
-			return [basePalettes.light, basePalettes.dark,  basePalettes.bright];
+			return [basePalettes.light, basePalettes.dark, basePalettes.bright];
 		} else {
 			secondAccentColor = secondAccentColors[Math.floor(Math.random() * secondAccentColors.length)];
-			const secondAccentHsl = this.hexToHsl(secondAccentColor);
-			
+			const secondAccentHsl = window.h.hexToHsl(secondAccentColor);
+
 			// Adjust second accent color for contrast with backgrounds
 			const adjustedSecondAccentForLight = this.adjustColorForContrast(secondAccentColor, lightBgColor);
 			const adjustedSecondAccentForDark = this.adjustColorForContrast(secondAccentColor, darkBgColor);
 			const adjustedSecondAccentForWhite = this.adjustColorForContrast(secondAccentColor, '#FFFFFF');
 			const adjustedSecondAccentForBright = this.adjustColorForContrast(secondAccentColor, accentColor);
-			
-			const bright2BgColor = this.hslToHex(accentHsl.h, accentHsl.s, 10);
-			const bright2SecondBgColor = this.hslToHex(accentHsl.h, accentHsl.s, 15);
+
+			const bright2BgColor = window.h.hslToHex(accentHsl.h, accentHsl.s, 10);
+			const bright2SecondBgColor = window.h.hslToHex(accentHsl.h, accentHsl.s, 15);
 			const adjustedSecondAccentForBright2 = this.adjustColorForContrast(secondAccentColor, bright2BgColor);
-			const adjustedSecondAccentForBright2Second = this.adjustColorForContrast(secondAccentColor, bright2SecondBgColor);
-			
-			const darkSecondBgColor = this.hslToHex(secondAccentHsl.h, secondAccentHsl.s, 97);
+			const adjustedSecondAccentForBright2Second = this.adjustColorForContrast(
+				secondAccentColor,
+				bright2SecondBgColor
+			);
+
+			const darkSecondBgColor = window.h.hslToHex(secondAccentHsl.h, secondAccentHsl.s, 97);
 			const adjustedAccentForDarkSecond = this.adjustColorForContrast(accentColor, darkSecondBgColor);
-			
+
 			secondPalettes = {
 				light: {
 					bgColor: lightBgColor,
@@ -186,7 +405,7 @@ export default class PaletteGenerator {
 				bright: {
 					bgColor: accentColor,
 					buttonColor: adjustedSecondAccentForBright,
-					textColor: this.getContrastRatio(accentColor, '#ffffff') > 4 ? '#FFFFFF' : '#000000',
+					textColor: window.h.getContrastRatio(accentColor, '#ffffff') > 4 ? '#FFFFFF' : '#000000',
 
 					secondBgColor: '#FFFFFF',
 					secondButtonColor: adjustedSecondAccentForWhite,
@@ -203,7 +422,15 @@ export default class PaletteGenerator {
 				},
 			};
 		}
-		return [basePalettes.light, basePalettes.dark,  basePalettes.bright, secondPalettes.light, secondPalettes.dark, secondPalettes.bright, secondPalettes.bright2];
+		return [
+			basePalettes.light,
+			basePalettes.dark,
+			basePalettes.bright,
+			secondPalettes.light,
+			secondPalettes.dark,
+			secondPalettes.bright,
+			secondPalettes.bright2,
+		];
 	}
 	// #endregion
 
@@ -237,7 +464,7 @@ export default class PaletteGenerator {
 	 * @returns {string} 'light', 'dark', or 'bright'
 	 */
 	determinePaletteType(color) {
-		const hsl = this.hexToHsl(color);
+		const hsl = window.h.hexToHsl(color);
 		const lightness = hsl.l;
 		const saturation = hsl.s;
 
@@ -266,28 +493,28 @@ export default class PaletteGenerator {
 
 		// Select primary accent color
 		let primaryAccent = window.accentColors[Math.floor(Math.random() * window.accentColors.length)];
-		
+
 		// Optionally use harmony to find related colors
 		if (useHarmony) {
 			const harmoniousColors = [
 				...this.findComplementaryColors(primaryAccent),
 				...this.findAnalogousColors(primaryAccent),
-				...this.findMonochromaticColors(primaryAccent)
+				...this.findMonochromaticColors(primaryAccent),
 			].filter(color => window.accentColors.includes(color));
-			
+
 			if (harmoniousColors.length > 0) {
 				primaryAccent = harmoniousColors[Math.floor(Math.random() * harmoniousColors.length)];
 			}
 		}
 
 		const suggestedType = this.determinePaletteType(primaryAccent);
-		const primaryHsl = this.hexToHsl(primaryAccent);
+		const primaryHsl = window.h.hexToHsl(primaryAccent);
 
 		// Weighted random selection to increase dark palette generation
 		// Dark: 40%, Light: 35%, Bright: 25%
 		const random = Math.random();
 		let paletteType = suggestedType;
-		
+
 		if (random < 0.4) {
 			// 40% chance for dark palette
 			paletteType = 'dark';
@@ -333,13 +560,19 @@ export default class PaletteGenerator {
 		}
 
 		// Generate text color with good contrast
-		const textColor = this.findContrastingColor(bgColor, ['#000000', '#292929', this.hslToHex(accentHsl.h, accentHsl.s, 18)]);
+		const textColor = this.findContrastingColor(bgColor, [
+			'#000000',
+			'#292929',
+			window.h.hslToHex(accentHsl.h, accentHsl.s, 18),
+		]);
 
 		// Select second accent
 		let secondAccent = accentColor;
 		if (window.accentColors.length > 1) {
 			if (useHarmony) {
-				const complementary = this.findComplementaryColors(accentColor).filter(c => window.accentColors.includes(c));
+				const complementary = this.findComplementaryColors(accentColor).filter(c =>
+					window.accentColors.includes(c)
+				);
 				if (complementary.length > 0) {
 					secondAccent = complementary[Math.floor(Math.random() * complementary.length)];
 				} else {
@@ -363,7 +596,11 @@ export default class PaletteGenerator {
 			}
 		}
 
-		const secondTextColor = this.findContrastingColor(secondBgColor, ['#000000', '#292929', this.hslToHex(accentHsl.h, accentHsl.s, 18)]);
+		const secondTextColor = this.findContrastingColor(secondBgColor, [
+			'#000000',
+			'#292929',
+			window.h.hslToHex(accentHsl.h, accentHsl.s, 18),
+		]);
 
 		return {
 			bgColor,
@@ -433,10 +670,10 @@ export default class PaletteGenerator {
 	generateBrightPalette(accentColor, accentHsl, useHarmony) {
 		// Use accent color as background
 		const bgColor = accentColor;
-		
+
 		// Find best contrasting text/button color
-		const whiteContrast = this.getContrastRatio(accentColor, '#FFFFFF');
-		const blackContrast = this.getContrastRatio(accentColor, '#000000');
+		const whiteContrast = window.h.getContrastRatio(accentColor, '#FFFFFF');
+		const blackContrast = window.h.getContrastRatio(accentColor, '#000000');
 		const contrastColor = whiteContrast > blackContrast ? '#FFFFFF' : '#000000';
 
 		const textColor = contrastColor;
@@ -446,7 +683,9 @@ export default class PaletteGenerator {
 		let secondAccent = accentColor;
 		if (window.accentColors.length > 1) {
 			if (useHarmony) {
-				const complementary = this.findComplementaryColors(accentColor).filter(c => window.accentColors.includes(c));
+				const complementary = this.findComplementaryColors(accentColor).filter(c =>
+					window.accentColors.includes(c)
+				);
 				if (complementary.length > 0) {
 					secondAccent = complementary[Math.floor(Math.random() * complementary.length)];
 				} else {
@@ -487,7 +726,7 @@ export default class PaletteGenerator {
 		let bestContrast = 0;
 
 		for (const candidate of candidates) {
-			const contrast = this.getContrastRatio(backgroundColor, candidate);
+			const contrast = window.h.getContrastRatio(backgroundColor, candidate);
 			if (contrast > bestContrast) {
 				bestContrast = contrast;
 				bestColor = candidate;
@@ -496,8 +735,8 @@ export default class PaletteGenerator {
 
 		// If best contrast doesn't meet WCAG, try white/black
 		if (bestContrast < 4.5) {
-			const whiteContrast = this.getContrastRatio(backgroundColor, '#FFFFFF');
-			const blackContrast = this.getContrastRatio(backgroundColor, '#000000');
+			const whiteContrast = window.h.getContrastRatio(backgroundColor, '#FFFFFF');
+			const blackContrast = window.h.getContrastRatio(backgroundColor, '#000000');
 			return whiteContrast > blackContrast ? '#FFFFFF' : '#000000';
 		}
 
@@ -512,35 +751,35 @@ export default class PaletteGenerator {
 	 * @returns {string} Adjusted hex color
 	 */
 	adjustColorForContrast(color, backgroundColor, minContrast = 3) {
-		const currentContrast = this.getContrastRatio(color, backgroundColor);
-		
+		const currentContrast = window.h.getContrastRatio(color, backgroundColor);
+
 		// If contrast is already sufficient, return original color
 		if (currentContrast >= minContrast) {
 			return color;
 		}
 
-		const colorHsl = this.hexToHsl(color);
-		const bgHsl = this.hexToHsl(backgroundColor);
-		const bgLuminance = this.getLuminance(this.hexToRgb(backgroundColor));
-		
+		const colorHsl = window.h.hexToHsl(color);
+		const bgHsl = window.h.hexToHsl(backgroundColor);
+		const bgLuminance = window.h.getLuminance(window.h.hexToRgb(backgroundColor));
+
 		// Determine if background is light or dark
 		const isLightBackground = bgLuminance > 0.5;
-		
-		let adjustedHsl = { ...colorHsl };
+
+		let adjustedHsl = {...colorHsl};
 		const maxIterations = 20;
 		let iterations = 0;
 
-		console.log('change color', JSON.stringify(adjustedHsl))
-		
+		console.log('change color', JSON.stringify(adjustedHsl));
+
 		// Adjust lightness to improve contrast
 		while (iterations < maxIterations) {
-			const testColor = this.hslToHex(adjustedHsl.h, adjustedHsl.s, adjustedHsl.l);
-			const testContrast = this.getContrastRatio(testColor, backgroundColor);
-			
+			const testColor = window.h.hslToHex(adjustedHsl.h, adjustedHsl.s, adjustedHsl.l);
+			const testContrast = window.h.getContrastRatio(testColor, backgroundColor);
+
 			if (testContrast >= minContrast) {
 				return testColor;
 			}
-			
+
 			// For light backgrounds, make color darker (decrease lightness)
 			// For dark backgrounds, make color lighter (increase lightness)
 			if (isLightBackground) {
@@ -548,7 +787,7 @@ export default class PaletteGenerator {
 			} else {
 				adjustedHsl.l = Math.min(100, adjustedHsl.l + 5);
 			}
-			
+
 			// If we've gone too far, try adjusting saturation instead
 			if ((isLightBackground && adjustedHsl.l < 20) || (!isLightBackground && adjustedHsl.l > 80)) {
 				// Increase saturation to maintain color vibrancy while adjusting lightness
@@ -556,19 +795,19 @@ export default class PaletteGenerator {
 				// Reset lightness to a more moderate value
 				adjustedHsl.l = isLightBackground ? 30 : 70;
 			}
-			
+
 			iterations++;
 		}
 
-		console.log('klkl change color', JSON.stringify(adjustedHsl))
-		
+		console.log('klkl change color', JSON.stringify(adjustedHsl));
+
 		// If we couldn't achieve good contrast, return a high-contrast version
 		// For light backgrounds, return a very dark version
 		// For dark backgrounds, return a very light version
 		if (isLightBackground) {
-			return this.hslToHex(adjustedHsl.h, Math.min(100, adjustedHsl.s + 10), 20);
+			return window.h.hslToHex(adjustedHsl.h, Math.min(100, adjustedHsl.s + 10), 20);
 		} else {
-			return this.hslToHex(adjustedHsl.h, Math.min(100, adjustedHsl.s + 10), 80);
+			return window.h.hslToHex(adjustedHsl.h, Math.min(100, adjustedHsl.s + 10), 80);
 		}
 	}
 
@@ -577,23 +816,23 @@ export default class PaletteGenerator {
 	 */
 	validatePaletteContrast(palette) {
 		// Check primary palette
-		if (!this.meetsWCAG(palette.bgColor, palette.textColor)) {
+		if (!window.h.meetsWCAG(palette.bgColor, palette.textColor)) {
 			return false;
 		}
-		if (!this.meetsWCAG(palette.bgColor, palette.buttonColor)) {
+		if (!window.h.meetsWCAG(palette.bgColor, palette.buttonColor)) {
 			return false;
 		}
 
 		// Check secondary palette
-		if (!this.meetsWCAG(palette.secondBgColor, palette.secondTextColor)) {
+		if (!window.h.meetsWCAG(palette.secondBgColor, palette.secondTextColor)) {
 			return false;
 		}
-		if (!this.meetsWCAG(palette.secondBgColor, palette.secondButtonColor)) {
+		if (!window.h.meetsWCAG(palette.secondBgColor, palette.secondButtonColor)) {
 			return false;
 		}
 
 		// Check that both background colors have at least 1.0 contrast ratio
-		const bgContrast = this.getContrastRatio(palette.bgColor, palette.secondBgColor);
+		const bgContrast = window.h.getContrastRatio(palette.bgColor, palette.secondBgColor);
 		if (bgContrast < 1.2) {
 			return false;
 		}
@@ -605,16 +844,20 @@ export default class PaletteGenerator {
 	 * Generates a simple fallback palette if main generation fails
 	 */
 	generateFallbackPalette(accentColor, accentHsl) {
-		const bgColor = window.backgroundColors.length > 0 
-			? window.backgroundColors[Math.floor(Math.random() * window.backgroundColors.length)]
-			: '#FFFFFF';
-		
+		const bgColor =
+			window.backgroundColors.length > 0
+				? window.backgroundColors[Math.floor(Math.random() * window.backgroundColors.length)]
+				: '#FFFFFF';
+
 		const textColor = this.findContrastingColor(bgColor, ['#000000', '#292929']);
-		
-		const secondBgColor = window.backgroundColors.length > 0 && window.backgroundColors.length > 1
-			? window.backgroundColors.filter(c => c !== bgColor)[Math.floor(Math.random() * (window.backgroundColors.length - 1))]
-			: '#FFFFFF';
-		
+
+		const secondBgColor =
+			window.backgroundColors.length > 0 && window.backgroundColors.length > 1
+				? window.backgroundColors.filter(c => c !== bgColor)[
+						Math.floor(Math.random() * (window.backgroundColors.length - 1))
+				  ]
+				: '#FFFFFF';
+
 		const secondTextColor = this.findContrastingColor(secondBgColor, ['#000000', '#292929']);
 
 		const palette = {
@@ -635,92 +878,13 @@ export default class PaletteGenerator {
 	}
 	// #endregion
 
-	getLuminance(rgb) {
-		const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(val => {
-			val = val / 255;
-			return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
-		});
-		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-	}
-
-	getContrastRatio(color1, color2) {
-		const lum2 = this.getLuminance(this.hexToRgb(color2));
-		const lum1 = this.getLuminance(this.hexToRgb(color1));
-		const lighter = Math.max(lum1, lum2);
-		const darker = Math.min(lum1, lum2);
-		return (lighter + 0.05) / (darker + 0.05);
-	}
-
-	meetsWCAG(color1, color2) {
-		return this.getContrastRatio(color1, color2) >= 4.5;
-	}
-
-	hexToRgb(hex) {
-		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-		return result
-			? {
-					r: parseInt(result[1], 16),
-					g: parseInt(result[2], 16),
-					b: parseInt(result[3], 16),
-			  }
-			: null;
-	}
-
-	hslToHex(h, s, l) {
-		// h: 0..360, s/l: 0..100
-		s = s / 100;
-		l = l / 100;
-
-		let c = (1 - Math.abs(2 * l - 1)) * s;
-		let x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-		let m = l - c / 2;
-		let r1, g1, b1;
-
-		if (h >= 0 && h < 60) {
-			r1 = c;
-			g1 = x;
-			b1 = 0;
-		} else if (h >= 60 && h < 120) {
-			r1 = x;
-			g1 = c;
-			b1 = 0;
-		} else if (h >= 120 && h < 180) {
-			r1 = 0;
-			g1 = c;
-			b1 = x;
-		} else if (h >= 180 && h < 240) {
-			r1 = 0;
-			g1 = x;
-			b1 = c;
-		} else if (h >= 240 && h < 300) {
-			r1 = x;
-			g1 = 0;
-			b1 = c;
-		} else {
-			r1 = c;
-			g1 = 0;
-			b1 = x;
-		}
-
-		let r = Math.round((r1 + m) * 255);
-		let g = Math.round((g1 + m) * 255);
-		let b = Math.round((b1 + m) * 255);
-
-		return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-	}
-
-	getBrightness(color) {
-		const rgb = this.hexToRgb(color);
-		return (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-	}
-
 	// #region harmony methods
 	findAnalogousColors(accentColor) {
-		const accentHsl = this.hexToHsl(accentColor);
+		const accentHsl = window.h.hexToHsl(accentColor);
 		const analogousColors = [];
 		for (let i = 0; i < window.allColors.length; i++) {
 			const color = window.allColors[i];
-			const hsl = this.hexToHsl(color);
+			const hsl = window.h.hexToHsl(color);
 			const hueDiff = Math.abs(hsl.h - accentHsl.h);
 			const normalizedDiff = Math.min(hueDiff, 360 - hueDiff);
 			if (normalizedDiff <= 40) {
@@ -731,11 +895,11 @@ export default class PaletteGenerator {
 	}
 
 	findComplementaryColors(accentColor) {
-		const accentHsl = this.hexToHsl(accentColor);
+		const accentHsl = window.h.hexToHsl(accentColor);
 		const complementaryColors = [];
 		for (let i = 0; i < window.allColors.length; i++) {
 			const color = window.allColors[i];
-			const hsl = this.hexToHsl(color);
+			const hsl = window.h.hexToHsl(color);
 			const targetHue = (accentHsl.h + 180) % 360;
 			const hueDiff = Math.abs(hsl.h - targetHue);
 			const normalizedDiff = Math.min(hueDiff, 360 - hueDiff);
@@ -748,10 +912,10 @@ export default class PaletteGenerator {
 	}
 
 	findMonochromaticColors(accentColor) {
-		const accentHsl = this.hexToHsl(accentColor);
+		const accentHsl = window.h.hexToHsl(accentColor);
 		const monochromaticColors = [];
 		for (const color of window.allColors) {
-			const hsl = this.hexToHsl(color);
+			const hsl = window.h.hexToHsl(color);
 			const hDiff = Math.abs(hsl.h - accentHsl.h);
 			const sDiff = Math.abs(hsl.s - accentHsl.s);
 			const lDiff = Math.abs(hsl.l - accentHsl.l);
