@@ -286,7 +286,11 @@ export default class PaletteGenerator {
 			basePalettes['text_3'] = {
 				bgColor: darkBgColor,
 				buttonColor: accentColor,
-				textColor: '#FFFFFF',
+				textColor: window.h.hslToHex(
+					analogousBackSecondAccentColorHsl.h,
+					analogousBackSecondAccentColorHsl.s,
+					LIGHT_BG_LIGHTNESS - 12
+				),
 
 				secondBgColor: '#FFFFFF',
 				secondButtonColor: accentColor,
