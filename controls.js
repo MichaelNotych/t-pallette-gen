@@ -3,7 +3,8 @@ export const DEFAULT_CONSTANTS = {
 	LIGHT_BG_LIGHTNESS: 97,
 	ANALOGOUS_HUE_RANGE: 30,
 	ACCENT_AND_BACKGROUND_CONTRAST_RATIO: 1.4,
-	DEFAULT_DARK_BG_COLOR: '#292929'
+	DEFAULT_DARK_BG_COLOR: '#292929',
+	USE_RANDOM_ACCENTS: false,
 };
 
 /**
@@ -20,7 +21,7 @@ export function renderPaletteControls(container, options = {}) {
 		includeConstants = true,
 		buttonGroupClass = 'button-group',
 		generateBtnId = 'generateBtn',
-		resetBtnId = 'resetBtn'
+		resetBtnId = 'resetBtn',
 	} = options;
 
 	let html = '';
@@ -40,11 +41,17 @@ export function renderPaletteControls(container, options = {}) {
 					</div>
 					<div class="constant-input-group">
 						<label for="contrastRatio">Contrast Ratio:</label>
-						<input type="number" id="contrastRatio" value="${DEFAULT_CONSTANTS.ACCENT_AND_BACKGROUND_CONTRAST_RATIO}" min="0" max="10" step="0.1">
+						<input type="number" id="contrastRatio" value="${
+							DEFAULT_CONSTANTS.ACCENT_AND_BACKGROUND_CONTRAST_RATIO
+						}" min="0" max="10" step="0.1">
 					</div>
 					<div class="constant-input-group">
 						<label for="defaultDarkBgColor">Default Dark BG Color:</label>
 						<input type="color" id="defaultDarkBgColor" value="${DEFAULT_CONSTANTS.DEFAULT_DARK_BG_COLOR}">
+					</div>
+					<div class="constant-input-group">
+						<label for="useRandomAccents">Use Random Accents:</label>
+						<input type="checkbox" id="useRandomAccents" ${DEFAULT_CONSTANTS.USE_RANDOM_ACCENTS ? 'checked' : ''}>
 					</div>
 				</div>
 			</div>
@@ -89,10 +96,17 @@ export function saveConstantsToStorage(constants) {
 // Get constants from form inputs
 export function getConstantsFromInputs() {
 	return {
-		LIGHT_BG_LIGHTNESS: parseFloat(document.getElementById('lightBgLightness')?.value) || DEFAULT_CONSTANTS.LIGHT_BG_LIGHTNESS,
-		ANALOGOUS_HUE_RANGE: parseFloat(document.getElementById('analogousHueRange')?.value) || DEFAULT_CONSTANTS.ANALOGOUS_HUE_RANGE,
-		ACCENT_AND_BACKGROUND_CONTRAST_RATIO: parseFloat(document.getElementById('contrastRatio')?.value) || DEFAULT_CONSTANTS.ACCENT_AND_BACKGROUND_CONTRAST_RATIO,
-		DEFAULT_DARK_BG_COLOR: document.getElementById('defaultDarkBgColor')?.value || DEFAULT_CONSTANTS.DEFAULT_DARK_BG_COLOR
+		LIGHT_BG_LIGHTNESS:
+			parseFloat(document.getElementById('lightBgLightness')?.value) || DEFAULT_CONSTANTS.LIGHT_BG_LIGHTNESS,
+		ANALOGOUS_HUE_RANGE:
+			parseFloat(document.getElementById('analogousHueRange')?.value) || DEFAULT_CONSTANTS.ANALOGOUS_HUE_RANGE,
+		ACCENT_AND_BACKGROUND_CONTRAST_RATIO:
+			parseFloat(document.getElementById('contrastRatio')?.value) ||
+			DEFAULT_CONSTANTS.ACCENT_AND_BACKGROUND_CONTRAST_RATIO,
+		DEFAULT_DARK_BG_COLOR:
+			document.getElementById('defaultDarkBgColor')?.value || DEFAULT_CONSTANTS.DEFAULT_DARK_BG_COLOR,
+		USE_RANDOM_ACCENTS:
+			document.getElementById('useRandomAccents')?.checked ?? DEFAULT_CONSTANTS.USE_RANDOM_ACCENTS,
 	};
 }
 
@@ -102,11 +116,18 @@ export function populateInputsFromConstants(constants) {
 	const analogousHueInput = document.getElementById('analogousHueRange');
 	const contrastRatioInput = document.getElementById('contrastRatio');
 	const defaultDarkBgInput = document.getElementById('defaultDarkBgColor');
+	const useRandomAccentsInput = document.getElementById('useRandomAccents');
 
 	if (lightBgInput) lightBgInput.value = constants.LIGHT_BG_LIGHTNESS ?? DEFAULT_CONSTANTS.LIGHT_BG_LIGHTNESS;
-	if (analogousHueInput) analogousHueInput.value = constants.ANALOGOUS_HUE_RANGE ?? DEFAULT_CONSTANTS.ANALOGOUS_HUE_RANGE;
-	if (contrastRatioInput) contrastRatioInput.value = constants.ACCENT_AND_BACKGROUND_CONTRAST_RATIO ?? DEFAULT_CONSTANTS.ACCENT_AND_BACKGROUND_CONTRAST_RATIO;
-	if (defaultDarkBgInput) defaultDarkBgInput.value = constants.DEFAULT_DARK_BG_COLOR ?? DEFAULT_CONSTANTS.DEFAULT_DARK_BG_COLOR;
+	if (analogousHueInput)
+		analogousHueInput.value = constants.ANALOGOUS_HUE_RANGE ?? DEFAULT_CONSTANTS.ANALOGOUS_HUE_RANGE;
+	if (contrastRatioInput)
+		contrastRatioInput.value =
+			constants.ACCENT_AND_BACKGROUND_CONTRAST_RATIO ?? DEFAULT_CONSTANTS.ACCENT_AND_BACKGROUND_CONTRAST_RATIO;
+	if (defaultDarkBgInput)
+		defaultDarkBgInput.value = constants.DEFAULT_DARK_BG_COLOR ?? DEFAULT_CONSTANTS.DEFAULT_DARK_BG_COLOR;
+	if (useRandomAccentsInput)
+		useRandomAccentsInput.checked = constants.USE_RANDOM_ACCENTS ?? DEFAULT_CONSTANTS.USE_RANDOM_ACCENTS;
 }
 
 // Reset constants to defaults
@@ -131,7 +152,8 @@ export function setupConstantsEventListeners() {
 		'lightBgLightness',
 		'analogousHueRange',
 		'contrastRatio',
-		'defaultDarkBgColor'
+		'defaultDarkBgColor',
+		'useRandomAccents',
 	];
 
 	constantInputs.forEach(inputId => {
@@ -141,11 +163,12 @@ export function setupConstantsEventListeners() {
 				const constants = getConstantsFromInputs();
 				saveConstantsToStorage(constants);
 			});
-			input.addEventListener('input', () => {
-				const constants = getConstantsFromInputs();
-				saveConstantsToStorage(constants);
-			});
+			if (input.type !== 'checkbox') {
+				input.addEventListener('input', () => {
+					const constants = getConstantsFromInputs();
+					saveConstantsToStorage(constants);
+				});
+			}
 		}
 	});
 }
-

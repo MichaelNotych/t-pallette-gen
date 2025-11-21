@@ -54,6 +54,7 @@ export default class PaletteGenerator {
 			ANALOGOUS_HUE_RANGE: 30,
 			ACCENT_AND_BACKGROUND_CONTRAST_RATIO: 1.4,
 			DEFAULT_DARK_BG_COLOR: '#292929',
+			USE_RANDOM_ACCENTS: false,
 		};
 
 		const mergedConstants = {...defaultConstants, ...constants};
@@ -72,6 +73,7 @@ export default class PaletteGenerator {
 		const ANALOGOUS_HUE_RANGE = constants.ANALOGOUS_HUE_RANGE ?? 30;
 		const ACCENT_AND_BACKGROUND_CONTRAST_RATIO = constants.ACCENT_AND_BACKGROUND_CONTRAST_RATIO ?? 1.4;
 		const DEFAULT_DARK_BG_COLOR = constants.DEFAULT_DARK_BG_COLOR ?? '#292929';
+		const USE_RANDOM_ACCENTS = constants.USE_RANDOM_ACCENTS ?? false;
 
 		const accentHsl = window.h.hexToHsl(accentColor);
 
@@ -80,47 +82,88 @@ export default class PaletteGenerator {
 		const darkBgColor = DEFAULT_DARK_BG_COLOR;
 		const accentColorName = window.colorName[accentColor];
 
-		// new colors
-		const complementaryAccentColors = window.accentColors.filter(color => {
-			const colorHsl = window.h.hexToHsl(color);
-			const hueRange = [
-				(accentHsl.h + 180 - ANALOGOUS_HUE_RANGE) % 360,
-				(accentHsl.h + 180 + ANALOGOUS_HUE_RANGE) % 360,
-			];
-			let colorInRange = false;
-			if (hueRange[0] < hueRange[1]) {
-				colorInRange = colorHsl.h >= hueRange[0] && colorHsl.h <= hueRange[1];
-			} else {
-				colorInRange = colorHsl.h >= hueRange[0] || colorHsl.h <= hueRange[1];
-			}
-			return colorInRange && window.h.getContrastRatio(color, '#FFFFFF') > ACCENT_AND_BACKGROUND_CONTRAST_RATIO;
-		});
-		const secondAccentColor =
-			complementaryAccentColors[Math.floor(Math.random() * complementaryAccentColors.length)];
-		const secondAccentColorHsl = window.h.hexToHsl(secondAccentColor);
+		// Helper function to get a random accent color with sufficient contrast
+		const getRandomAccentColor = () => {
+			const availableColors = window.accentColors.filter(
+				color =>
+					color !== accentColor &&
+					window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
+			);
+			if (availableColors.length === 0) return null;
+			return availableColors[Math.floor(Math.random() * availableColors.length)];
+		};
 
-		let analogousBackAccentColors = window.accentColors.filter(color => {
-			const colorHsl = window.h.hexToHsl(color);
-			return (
-				accentHsl.h - colorHsl.h > ANALOGOUS_HUE_RANGE &&
-				accentHsl.h - colorHsl.h < ANALOGOUS_HUE_RANGE * 2 &&
-				window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
-			);
-		});
-		const analogousBackSecondAccentColor =
-			analogousBackAccentColors[Math.floor(Math.random() * analogousBackAccentColors.length)];
-		const analogousBackSecondAccentColorHsl = window.h.hexToHsl(analogousBackSecondAccentColor);
-		let analogousForwardAccentColors = window.accentColors.filter(color => {
-			const colorHsl = window.h.hexToHsl(color);
-			return (
-				colorHsl.h - accentHsl.h > ANALOGOUS_HUE_RANGE &&
-				colorHsl.h - accentHsl.h < ANALOGOUS_HUE_RANGE * 2 &&
-				window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
-			);
-		});
-		const analogousForwardSecondAccentColor =
-			analogousForwardAccentColors[Math.floor(Math.random() * analogousForwardAccentColors.length)];
-		const analogousForwardSecondAccentColorHsl = window.h.hexToHsl(analogousForwardSecondAccentColor);
+		// new colors
+		let secondAccentColor, secondAccentColorHsl;
+		let analogousBackSecondAccentColor, analogousBackSecondAccentColorHsl;
+		let analogousForwardSecondAccentColor, analogousForwardSecondAccentColorHsl;
+
+		if (USE_RANDOM_ACCENTS) {
+			// Use random selection with contrast check
+			secondAccentColor = getRandomAccentColor();
+			if (secondAccentColor) {
+				secondAccentColorHsl = window.h.hexToHsl(secondAccentColor);
+			}
+
+			analogousBackSecondAccentColor = getRandomAccentColor();
+			if (analogousBackSecondAccentColor) {
+				analogousBackSecondAccentColorHsl = window.h.hexToHsl(analogousBackSecondAccentColor);
+			}
+
+			analogousForwardSecondAccentColor = getRandomAccentColor();
+			if (analogousForwardSecondAccentColor) {
+				analogousForwardSecondAccentColorHsl = window.h.hexToHsl(analogousForwardSecondAccentColor);
+			}
+		} else {
+			// Use original logic with complementary and analogous colors
+			const complementaryAccentColors = window.accentColors.filter(color => {
+				const colorHsl = window.h.hexToHsl(color);
+				const hueRange = [
+					(accentHsl.h + 180 - ANALOGOUS_HUE_RANGE) % 360,
+					(accentHsl.h + 180 + ANALOGOUS_HUE_RANGE) % 360,
+				];
+				let colorInRange = false;
+				if (hueRange[0] < hueRange[1]) {
+					colorInRange = colorHsl.h >= hueRange[0] && colorHsl.h <= hueRange[1];
+				} else {
+					colorInRange = colorHsl.h >= hueRange[0] || colorHsl.h <= hueRange[1];
+				}
+				return colorInRange;
+			});
+			if (complementaryAccentColors.length > 0) {
+				secondAccentColor =
+					complementaryAccentColors[Math.floor(Math.random() * complementaryAccentColors.length)];
+				secondAccentColorHsl = window.h.hexToHsl(secondAccentColor);
+			}
+
+			let analogousBackAccentColors = window.accentColors.filter(color => {
+				const colorHsl = window.h.hexToHsl(color);
+				return (
+					accentHsl.h - colorHsl.h > ANALOGOUS_HUE_RANGE &&
+					accentHsl.h - colorHsl.h < ANALOGOUS_HUE_RANGE * 2 &&
+					window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
+				);
+			});
+			if (analogousBackAccentColors.length > 0) {
+				analogousBackSecondAccentColor =
+					analogousBackAccentColors[Math.floor(Math.random() * analogousBackAccentColors.length)];
+				analogousBackSecondAccentColorHsl = window.h.hexToHsl(analogousBackSecondAccentColor);
+			}
+
+			let analogousForwardAccentColors = window.accentColors.filter(color => {
+				const colorHsl = window.h.hexToHsl(color);
+				return (
+					colorHsl.h - accentHsl.h > ANALOGOUS_HUE_RANGE &&
+					colorHsl.h - accentHsl.h < ANALOGOUS_HUE_RANGE * 2 &&
+					window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
+				);
+			});
+			if (analogousForwardAccentColors.length > 0) {
+				analogousForwardSecondAccentColor =
+					analogousForwardAccentColors[Math.floor(Math.random() * analogousForwardAccentColors.length)];
+				analogousForwardSecondAccentColorHsl = window.h.hexToHsl(analogousForwardSecondAccentColor);
+			}
+		}
 
 		const basePalettes = {
 			light: {
@@ -162,7 +205,10 @@ export default class PaletteGenerator {
 				accent: accentColor,
 				isGoodPalette: true,
 			},
-			text: {
+		};
+
+		if (secondAccentColor) {
+			basePalettes['text'] = {
 				bgColor: accentColor,
 				buttonColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
 				textColor: secondAccentColor,
@@ -174,8 +220,8 @@ export default class PaletteGenerator {
 				colorName: accentColorName,
 				accent: accentColor,
 				isGoodPalette: true,
-			},
-		};
+			};
+		}
 
 		if (secondAccentColorHsl) {
 			basePalettes['light_2'] = {
