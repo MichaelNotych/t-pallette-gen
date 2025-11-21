@@ -108,7 +108,7 @@ export default class PaletteGenerator {
 			);
 		});
 		const analogousBackSecondAccentColor =
-				analogousBackAccentColors[Math.floor(Math.random() * analogousBackAccentColors.length)];
+			analogousBackAccentColors[Math.floor(Math.random() * analogousBackAccentColors.length)];
 		const analogousBackSecondAccentColorHsl = window.h.hexToHsl(analogousBackSecondAccentColor);
 		let analogousForwardAccentColors = window.accentColors.filter(color => {
 			const colorHsl = window.h.hexToHsl(color);
@@ -119,7 +119,7 @@ export default class PaletteGenerator {
 			);
 		});
 		const analogousForwardSecondAccentColor =
-				analogousForwardAccentColors[Math.floor(Math.random() * analogousForwardAccentColors.length)];
+			analogousForwardAccentColors[Math.floor(Math.random() * analogousForwardAccentColors.length)];
 		const analogousForwardSecondAccentColorHsl = window.h.hexToHsl(analogousForwardSecondAccentColor);
 
 		const basePalettes = {
@@ -156,6 +156,19 @@ export default class PaletteGenerator {
 
 				secondBgColor: '#FFFFFF',
 				secondButtonColor: accentColor,
+				secondTextColor: '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
+			},
+			text: {
+				bgColor: accentColor,
+				buttonColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				textColor: secondAccentColor,
+
+				secondBgColor: '#FFFFFF',
+				secondButtonColor: secondAccentColor,
 				secondTextColor: '#000000',
 
 				colorName: accentColorName,
@@ -206,6 +219,20 @@ export default class PaletteGenerator {
 				accent: accentColor,
 				isGoodPalette: true,
 			};
+
+			basePalettes['text_2'] = {
+				bgColor: lightBgColor,
+				buttonColor: accentColor,
+				textColor: '#000000',
+
+				secondBgColor: window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, LIGHT_BG_LIGHTNESS),
+				secondButtonColor: '#000000',
+				secondTextColor: window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, 40),
+
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
+			};
 		}
 
 		if (analogousBackSecondAccentColor) {
@@ -227,7 +254,11 @@ export default class PaletteGenerator {
 				buttonColor: accentColor,
 				textColor: '#FFFFFF',
 
-				secondBgColor: window.h.hslToHex(analogousBackSecondAccentColorHsl.h, analogousBackSecondAccentColorHsl.s, LIGHT_BG_LIGHTNESS),
+				secondBgColor: window.h.hslToHex(
+					analogousBackSecondAccentColorHsl.h,
+					analogousBackSecondAccentColorHsl.s,
+					LIGHT_BG_LIGHTNESS
+				),
 				secondButtonColor: analogousBackSecondAccentColor,
 				secondTextColor: '#000000',
 
@@ -244,7 +275,26 @@ export default class PaletteGenerator {
 				secondBgColor: analogousBackSecondAccentColor,
 				secondButtonColor:
 					window.h.getContrastRatio(analogousBackSecondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
-				secondTextColor: window.h.getContrastRatio(analogousBackSecondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				secondTextColor:
+					window.h.getContrastRatio(analogousBackSecondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
+			};
+
+			basePalettes['text_3'] = {
+				bgColor: darkBgColor,
+				buttonColor: accentColor,
+				textColor: '#FFFFFF',
+
+				secondBgColor: '#FFFFFF',
+				secondButtonColor: accentColor,
+				secondTextColor: window.h.hslToHex(
+					analogousBackSecondAccentColorHsl.h,
+					analogousBackSecondAccentColorHsl.s,
+					20
+				),
 
 				colorName: accentColorName,
 				accent: accentColor,
@@ -270,7 +320,11 @@ export default class PaletteGenerator {
 				buttonColor: accentColor,
 				textColor: '#FFFFFF',
 
-				secondBgColor: window.h.hslToHex(analogousForwardSecondAccentColorHsl.h, analogousForwardSecondAccentColorHsl.s, LIGHT_BG_LIGHTNESS),
+				secondBgColor: window.h.hslToHex(
+					analogousForwardSecondAccentColorHsl.h,
+					analogousForwardSecondAccentColorHsl.s,
+					LIGHT_BG_LIGHTNESS
+				),
 				secondButtonColor: analogousForwardSecondAccentColor,
 				secondTextColor: '#000000',
 
@@ -286,8 +340,27 @@ export default class PaletteGenerator {
 
 				secondBgColor: analogousForwardSecondAccentColor,
 				secondButtonColor:
-					window.h.getContrastRatio(analogousForwardSecondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
-				secondTextColor: window.h.getContrastRatio(analogousForwardSecondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+					window.h.getContrastRatio(analogousForwardSecondAccentColor, '#ffffff') > 2.5
+						? '#FFFFFF'
+						: '#000000',
+				secondTextColor:
+					window.h.getContrastRatio(analogousForwardSecondAccentColor, '#ffffff') > 2.5
+						? '#FFFFFF'
+						: '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
+			};
+
+			basePalettes['text_4'] = {
+				bgColor: accentColor,
+				buttonColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				textColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+
+				secondBgColor: '#FFFFFF',
+				secondButtonColor: analogousForwardSecondAccentColor,
+				secondTextColor: analogousForwardSecondAccentColor,
 
 				colorName: accentColorName,
 				accent: accentColor,
