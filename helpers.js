@@ -79,6 +79,9 @@ export default class Helpers {
 	}
 
 	hexToHsl(hex) {
+		if (!hex) {
+			return null;
+		}
 		const hexResult = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 		const rgb = {
 			r: parseInt(hexResult[1], 16),

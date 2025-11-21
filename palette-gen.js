@@ -51,9 +51,6 @@ export default class PaletteGenerator {
 		// Default values
 		const defaultConstants = {
 			LIGHT_BG_LIGHTNESS: 97,
-			LIGHTEST_BG_LIGHTNESS: 90,
-			DARK_BG_LIGHTNESS: 20,
-			DARKEST_BG_LIGHTNESS: 15,
 			ANALOGOUS_HUE_RANGE: 30,
 			ACCENT_AND_BACKGROUND_CONTRAST_RATIO: 1.4,
 			DEFAULT_DARK_BG_COLOR: '#292929',
@@ -72,9 +69,6 @@ export default class PaletteGenerator {
 
 	generatePalettesWithAlgorithm_v2(accentColor, constants = {}) {
 		const LIGHT_BG_LIGHTNESS = constants.LIGHT_BG_LIGHTNESS ?? 97;
-		const LIGHTEST_BG_LIGHTNESS = constants.LIGHTEST_BG_LIGHTNESS ?? 98;
-		const DARK_BG_LIGHTNESS = constants.DARK_BG_LIGHTNESS ?? 20;
-		const DARKEST_BG_LIGHTNESS = constants.DARKEST_BG_LIGHTNESS ?? 15;
 		const ANALOGOUS_HUE_RANGE = constants.ANALOGOUS_HUE_RANGE ?? 30;
 		const ACCENT_AND_BACKGROUND_CONTRAST_RATIO = constants.ACCENT_AND_BACKGROUND_CONTRAST_RATIO ?? 1.4;
 		const DEFAULT_DARK_BG_COLOR = constants.DEFAULT_DARK_BG_COLOR ?? '#292929';
@@ -101,8 +95,11 @@ export default class PaletteGenerator {
 			}
 			return colorInRange && window.h.getContrastRatio(color, '#FFFFFF') > ACCENT_AND_BACKGROUND_CONTRAST_RATIO;
 		});
+		const secondAccentColor =
+			complementaryAccentColors[Math.floor(Math.random() * complementaryAccentColors.length)];
+		const secondAccentColorHsl = window.h.hexToHsl(secondAccentColor);
 
-		let analogousAccentColors = window.accentColors.filter(color => {
+		let analogousBackAccentColors = window.accentColors.filter(color => {
 			const colorHsl = window.h.hexToHsl(color);
 			return (
 				accentHsl.h - colorHsl.h > ANALOGOUS_HUE_RANGE &&
@@ -110,16 +107,10 @@ export default class PaletteGenerator {
 				window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
 			);
 		});
-
-		let analogousBackDarkBgColors = window.darkBackgroundColors.filter(color => {
-			const colorHsl = window.h.hexToHsl(color);
-			return (
-				accentHsl.h - colorHsl.h > ANALOGOUS_HUE_RANGE &&
-				accentHsl.h - colorHsl.h < ANALOGOUS_HUE_RANGE * 2 &&
-				window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
-			);
-		});
-		let analogousForwardDarkBgColors = window.darkBackgroundColors.filter(color => {
+		const analogousBackSecondAccentColor =
+				analogousBackAccentColors[Math.floor(Math.random() * analogousBackAccentColors.length)];
+		const analogousBackSecondAccentColorHsl = window.h.hexToHsl(analogousBackSecondAccentColor);
+		let analogousForwardAccentColors = window.accentColors.filter(color => {
 			const colorHsl = window.h.hexToHsl(color);
 			return (
 				colorHsl.h - accentHsl.h > ANALOGOUS_HUE_RANGE &&
@@ -127,24 +118,23 @@ export default class PaletteGenerator {
 				window.h.getContrastRatio(accentColor, color) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
 			);
 		});
-
-		let analogousDarkBgColors = window.darkBackgroundColors.filter(color => {
-			const colorHsl = window.h.hexToHsl(color);
-			return accentHsl.h + ANALOGOUS_HUE_RANGE > colorHsl.h && accentHsl.h - ANALOGOUS_HUE_RANGE < colorHsl.h;
-		});
+		const analogousForwardSecondAccentColor =
+				analogousForwardAccentColors[Math.floor(Math.random() * analogousForwardAccentColors.length)];
+		const analogousForwardSecondAccentColorHsl = window.h.hexToHsl(analogousForwardSecondAccentColor);
 
 		const basePalettes = {
 			light: {
 				bgColor: lightBgColor,
 				buttonColor: accentColor,
-				textColor: DEFAULT_DARK_BG_COLOR,
+				textColor: '#000000',
 
 				secondBgColor: '#FFFFFF',
 				secondButtonColor: accentColor,
-				secondTextColor: DEFAULT_DARK_BG_COLOR,
+				secondTextColor: '#000000',
 
 				colorName: accentColorName,
 				accent: accentColor,
+				isGoodPalette: true,
 			},
 			dark: {
 				bgColor: darkBgColor,
@@ -157,6 +147,7 @@ export default class PaletteGenerator {
 
 				colorName: accentColorName,
 				accent: accentColor,
+				isGoodPalette: true,
 			},
 			bright: {
 				bgColor: accentColor,
@@ -169,133 +160,138 @@ export default class PaletteGenerator {
 
 				colorName: accentColorName,
 				accent: accentColor,
+				isGoodPalette: true,
 			},
 		};
 
-		if (complementaryAccentColors.length === 0) return Object.keys(basePalettes).map(key => basePalettes[key]);
-
-		const secondAccentColor =
-			complementaryAccentColors[Math.floor(Math.random() * complementaryAccentColors.length)];
-		const secondAccentColorHsl = window.h.hexToHsl(secondAccentColor);
-
-		if (
-			window.h.getContrastRatio(
-				window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, 90),
-				accentColor
-			) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
-		) {
+		if (secondAccentColorHsl) {
 			basePalettes['light_2'] = {
-				bgColor: window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, LIGHT_BG_LIGHTNESS),
+				bgColor: lightBgColor,
 				buttonColor: accentColor,
 				textColor: '#000000',
 
-				secondBgColor: window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, LIGHTEST_BG_LIGHTNESS),
-				secondButtonColor: accentColor,
+				secondBgColor: '#FFFFFF',
+				secondButtonColor: secondAccentColor,
 				secondTextColor: '#000000',
 
 				colorName: accentColorName,
 				accent: accentColor,
+				isGoodPalette: true,
 			};
-		}
-		if (
-			window.h.getContrastRatio(
-				window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, DARK_BG_LIGHTNESS),
-				accentColor
-			) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO
-		) {
 			basePalettes['dark_2'] = {
-				bgColor: window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s - 20, DARKEST_BG_LIGHTNESS),
+				bgColor: darkBgColor,
 				buttonColor: accentColor,
 				textColor: '#FFFFFF',
 
-				secondBgColor: window.h.hslToHex(
-					secondAccentColorHsl.h,
-					secondAccentColorHsl.s - 20,
-					DARK_BG_LIGHTNESS
-				),
-				secondButtonColor: accentColor,
-				secondTextColor: '#FFFFFF',
+				secondBgColor: window.h.hslToHex(secondAccentColorHsl.h, secondAccentColorHsl.s, LIGHT_BG_LIGHTNESS),
+				secondButtonColor: secondAccentColor,
+				secondTextColor: '#000000',
 
 				colorName: accentColorName,
 				accent: accentColor,
+				isGoodPalette: true,
+			};
+
+			basePalettes['bright_2'] = {
+				bgColor: accentColor,
+				buttonColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				textColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+
+				secondBgColor: secondAccentColor,
+				secondButtonColor:
+					window.h.getContrastRatio(secondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				secondTextColor: window.h.getContrastRatio(secondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
 			};
 		}
 
-		if (analogousDarkBgColors.length > 2) {
-			const thirdBgColor = analogousDarkBgColors[Math.floor(Math.random() * analogousDarkBgColors.length)];
-			analogousDarkBgColors = analogousDarkBgColors.filter(color => color !== thirdBgColor);
-			const thirdBgColor2 = analogousDarkBgColors[Math.floor(Math.random() * analogousDarkBgColors.length)];
+		if (analogousBackSecondAccentColor) {
+			basePalettes['light_3'] = {
+				bgColor: lightBgColor,
+				buttonColor: accentColor,
+				textColor: '#000000',
 
-			if (
-				window.h.getContrastRatio(accentColor, thirdBgColor) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO &&
-				window.h.getContrastRatio(thirdBgColor2, accentColor) > ACCENT_AND_BACKGROUND_CONTRAST_RATIO &&
-				window.h.getContrastRatio(thirdBgColor, thirdBgColor2) > 1.1
-			) {
-				basePalettes['bright_2'] = {
-					bgColor: thirdBgColor,
-					buttonColor: accentColor,
-					textColor: '#FFFFFF',
+				secondBgColor: '#FFFFFF',
+				secondButtonColor: analogousBackSecondAccentColor,
+				secondTextColor: '#000000',
 
-					secondBgColor: thirdBgColor2,
-					secondButtonColor: accentColor,
-					secondTextColor: '#FFFFFF',
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
+			};
+			basePalettes['dark_3'] = {
+				bgColor: darkBgColor,
+				buttonColor: accentColor,
+				textColor: '#FFFFFF',
 
-					colorName: accentColorName,
-					accent: accentColor,
-				};
-			}
-		}
+				secondBgColor: window.h.hslToHex(analogousBackSecondAccentColorHsl.h, analogousBackSecondAccentColorHsl.s, LIGHT_BG_LIGHTNESS),
+				secondButtonColor: analogousBackSecondAccentColor,
+				secondTextColor: '#000000',
 
-		console.log(analogousBackDarkBgColors, analogousForwardDarkBgColors);
-
-		if (analogousBackDarkBgColors.length !== 0 && analogousForwardDarkBgColors.length !== 0) {
-			const fourthBgColor =
-				analogousBackDarkBgColors[Math.floor(Math.random() * analogousBackDarkBgColors.length)];
-			analogousBackDarkBgColors = analogousBackDarkBgColors.filter(color => color !== fourthBgColor);
-			const fourthBgColor2 =
-				analogousForwardDarkBgColors[Math.floor(Math.random() * analogousForwardDarkBgColors.length)];
-
-			if (window.h.getContrastRatio(fourthBgColor, fourthBgColor2) > 1.1) {
-				basePalettes['dark_3'] = {
-					bgColor: fourthBgColor,
-					buttonColor: accentColor,
-					textColor: '#FFFFFF',
-
-					secondBgColor: fourthBgColor2,
-					secondButtonColor: accentColor,
-					secondTextColor: '#FFFFFF',
-
-					colorName: accentColorName,
-					accent: accentColor,
-				};
-			}
-		}
-
-		if (analogousAccentColors.length > 0) {
-			const analogousAccentColor =
-				analogousAccentColors[Math.floor(Math.random() * analogousAccentColors.length)];
-			const analogousAccentColorHsl = window.h.hexToHsl(analogousAccentColor);
-			analogousAccentColors = analogousAccentColors.filter(color => color !== analogousAccentColor);
-			if (analogousAccentColors.length === 0) return Object.keys(basePalettes).map(key => basePalettes[key]);
-			const analogousAccentColor2 =
-				analogousAccentColors[Math.floor(Math.random() * analogousAccentColors.length)];
-			const analogousAccentColor2Hsl = window.h.hexToHsl(analogousAccentColor2);
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
+			};
 
 			basePalettes['bright_3'] = {
-				bgColor: window.h.hslToHex(analogousAccentColorHsl.h, analogousAccentColorHsl.s, DARK_BG_LIGHTNESS),
-				buttonColor: accentColor,
-				textColor: '#FFFFFF',
+				bgColor: accentColor,
+				buttonColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				textColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
 
-				secondBgColor: window.h.hslToHex(
-					analogousAccentColor2Hsl.h,
-					analogousAccentColor2Hsl.s,
-					DARKEST_BG_LIGHTNESS
-				),
-				secondButtonColor: accentColor,
-				secondTextColor: '#FFFFFF',
+				secondBgColor: analogousBackSecondAccentColor,
+				secondButtonColor:
+					window.h.getContrastRatio(analogousBackSecondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				secondTextColor: window.h.getContrastRatio(analogousBackSecondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
 
 				colorName: accentColorName,
 				accent: accentColor,
+				isGoodPalette: true,
+			};
+		}
+		if (analogousForwardSecondAccentColor) {
+			basePalettes['light_4'] = {
+				bgColor: lightBgColor,
+				buttonColor: accentColor,
+				textColor: '#000000',
+
+				secondBgColor: '#FFFFFF',
+				secondButtonColor: analogousForwardSecondAccentColor,
+				secondTextColor: '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
+			};
+			basePalettes['dark_4'] = {
+				bgColor: darkBgColor,
+				buttonColor: accentColor,
+				textColor: '#FFFFFF',
+
+				secondBgColor: window.h.hslToHex(analogousForwardSecondAccentColorHsl.h, analogousForwardSecondAccentColorHsl.s, LIGHT_BG_LIGHTNESS),
+				secondButtonColor: analogousForwardSecondAccentColor,
+				secondTextColor: '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
+			};
+
+			basePalettes['bright_4'] = {
+				bgColor: accentColor,
+				buttonColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				textColor: window.h.getContrastRatio(accentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+
+				secondBgColor: analogousForwardSecondAccentColor,
+				secondButtonColor:
+					window.h.getContrastRatio(analogousForwardSecondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+				secondTextColor: window.h.getContrastRatio(analogousForwardSecondAccentColor, '#ffffff') > 2.5 ? '#FFFFFF' : '#000000',
+
+				colorName: accentColorName,
+				accent: accentColor,
+				isGoodPalette: true,
 			};
 		}
 

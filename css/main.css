@@ -248,12 +248,16 @@
 }
 
 .palette-card {
-	width: calc((100% - 80px) / 5);
+	width: calc((100% - 40px) / 3);
 	background: white;
 	border-radius: 12px;
 	overflow: hidden;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.palette-card.bad {
+	border: 2px solid red;
 }
 
 .palette-accent {
@@ -264,6 +268,15 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
+
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.palette-sidebar .palette-accent {
+	position: static;
+	width: 100%;
 }
 
 .palette-card:hover {
@@ -462,4 +475,23 @@
 
 .delete-btn:hover {
 	background: rgba(220, 53, 69, 0.9);
+}
+.palette-accent-wrapper {
+	display: flex;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.palette-sidebar .palette-category-accent {
+	padding-left: 0;
+}
+
+.palette-category-accent {
+	position: relative;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding-left: 20%;
+	margin-bottom: 40px;
 }

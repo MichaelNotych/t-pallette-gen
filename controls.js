@@ -1,9 +1,6 @@
 // Default constants values
 export const DEFAULT_CONSTANTS = {
 	LIGHT_BG_LIGHTNESS: 97,
-	LIGHTEST_BG_LIGHTNESS: 90,
-	DARK_BG_LIGHTNESS: 20,
-	DARKEST_BG_LIGHTNESS: 15,
 	ANALOGOUS_HUE_RANGE: 30,
 	ACCENT_AND_BACKGROUND_CONTRAST_RATIO: 1.4,
 	DEFAULT_DARK_BG_COLOR: '#292929'
@@ -36,18 +33,6 @@ export function renderPaletteControls(container, options = {}) {
 					<div class="constant-input-group">
 						<label for="lightBgLightness">Light BG Lightness:</label>
 						<input type="number" id="lightBgLightness" value="${DEFAULT_CONSTANTS.LIGHT_BG_LIGHTNESS}" min="0" max="100" step="1">
-					</div>
-					<div class="constant-input-group">
-						<label for="lightestBgLightness">Lightest BG Lightness:</label>
-						<input type="number" id="lightestBgLightness" value="${DEFAULT_CONSTANTS.LIGHTEST_BG_LIGHTNESS}" min="0" max="100" step="1">
-					</div>
-					<div class="constant-input-group">
-						<label for="darkBgLightness">Dark BG Lightness:</label>
-						<input type="number" id="darkBgLightness" value="${DEFAULT_CONSTANTS.DARK_BG_LIGHTNESS}" min="0" max="100" step="1">
-					</div>
-					<div class="constant-input-group">
-						<label for="darkestBgLightness">Darkest BG Lightness:</label>
-						<input type="number" id="darkestBgLightness" value="${DEFAULT_CONSTANTS.DARKEST_BG_LIGHTNESS}" min="0" max="100" step="1">
 					</div>
 					<div class="constant-input-group">
 						<label for="analogousHueRange">Analogous Hue Range:</label>
@@ -105,9 +90,6 @@ export function saveConstantsToStorage(constants) {
 export function getConstantsFromInputs() {
 	return {
 		LIGHT_BG_LIGHTNESS: parseFloat(document.getElementById('lightBgLightness')?.value) || DEFAULT_CONSTANTS.LIGHT_BG_LIGHTNESS,
-		LIGHTEST_BG_LIGHTNESS: parseFloat(document.getElementById('lightestBgLightness')?.value) || DEFAULT_CONSTANTS.LIGHTEST_BG_LIGHTNESS,
-		DARK_BG_LIGHTNESS: parseFloat(document.getElementById('darkBgLightness')?.value) || DEFAULT_CONSTANTS.DARK_BG_LIGHTNESS,
-		DARKEST_BG_LIGHTNESS: parseFloat(document.getElementById('darkestBgLightness')?.value) || DEFAULT_CONSTANTS.DARKEST_BG_LIGHTNESS,
 		ANALOGOUS_HUE_RANGE: parseFloat(document.getElementById('analogousHueRange')?.value) || DEFAULT_CONSTANTS.ANALOGOUS_HUE_RANGE,
 		ACCENT_AND_BACKGROUND_CONTRAST_RATIO: parseFloat(document.getElementById('contrastRatio')?.value) || DEFAULT_CONSTANTS.ACCENT_AND_BACKGROUND_CONTRAST_RATIO,
 		DEFAULT_DARK_BG_COLOR: document.getElementById('defaultDarkBgColor')?.value || DEFAULT_CONSTANTS.DEFAULT_DARK_BG_COLOR
@@ -117,17 +99,11 @@ export function getConstantsFromInputs() {
 // Populate form inputs with constants
 export function populateInputsFromConstants(constants) {
 	const lightBgInput = document.getElementById('lightBgLightness');
-	const lightestBgInput = document.getElementById('lightestBgLightness');
-	const darkBgInput = document.getElementById('darkBgLightness');
-	const darkestBgInput = document.getElementById('darkestBgLightness');
 	const analogousHueInput = document.getElementById('analogousHueRange');
 	const contrastRatioInput = document.getElementById('contrastRatio');
 	const defaultDarkBgInput = document.getElementById('defaultDarkBgColor');
 
 	if (lightBgInput) lightBgInput.value = constants.LIGHT_BG_LIGHTNESS ?? DEFAULT_CONSTANTS.LIGHT_BG_LIGHTNESS;
-	if (lightestBgInput) lightestBgInput.value = constants.LIGHTEST_BG_LIGHTNESS ?? DEFAULT_CONSTANTS.LIGHTEST_BG_LIGHTNESS;
-	if (darkBgInput) darkBgInput.value = constants.DARK_BG_LIGHTNESS ?? DEFAULT_CONSTANTS.DARK_BG_LIGHTNESS;
-	if (darkestBgInput) darkestBgInput.value = constants.DARKEST_BG_LIGHTNESS ?? DEFAULT_CONSTANTS.DARKEST_BG_LIGHTNESS;
 	if (analogousHueInput) analogousHueInput.value = constants.ANALOGOUS_HUE_RANGE ?? DEFAULT_CONSTANTS.ANALOGOUS_HUE_RANGE;
 	if (contrastRatioInput) contrastRatioInput.value = constants.ACCENT_AND_BACKGROUND_CONTRAST_RATIO ?? DEFAULT_CONSTANTS.ACCENT_AND_BACKGROUND_CONTRAST_RATIO;
 	if (defaultDarkBgInput) defaultDarkBgInput.value = constants.DEFAULT_DARK_BG_COLOR ?? DEFAULT_CONSTANTS.DEFAULT_DARK_BG_COLOR;
@@ -153,9 +129,6 @@ export function initializeConstants() {
 export function setupConstantsEventListeners() {
 	const constantInputs = [
 		'lightBgLightness',
-		'lightestBgLightness',
-		'darkBgLightness',
-		'darkestBgLightness',
 		'analogousHueRange',
 		'contrastRatio',
 		'defaultDarkBgColor'

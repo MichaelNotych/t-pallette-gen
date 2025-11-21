@@ -242,23 +242,30 @@ function generateAndDisplay() {
 
 	Object.keys(palettesSortedByColors).forEach(colorName => {
 		const colorPalettes = palettesSortedByColors[colorName];
+		const uniqueColors = [...new Set(colorPalettes.map(palette => palette.accent))];
 		const colorCardHTML = `
 			<div class="palette-category" data-color-name="${colorName}">
 				<h3 class="palette-category-header">${colorName} (${colorPalettes.length} palettes)</h3>
+				${
+					uniqueColors.map(color => {
+						return `<div class="palette-category-accent" data-accent-color="${color}"></div>`
+					}).join('')
+				}
 			</div>
 		`;
 		palettesGrid.insertAdjacentHTML('beforeend', colorCardHTML);
 	});
 	let prevAccentColor = '';
-	palettes.forEach(palette => {
+	palettes.forEach((palette, i) => {
 		let accentCircle = '';
 		if (prevAccentColor !== palette.accent) {
-			accentCircle = `<div style="width: 100%"></div><div class="palette-accent" style="background-color: ${palette.accent}">${palette.accent}</div>`;
+			console.log(prevAccentColor, palette.accent, i)
+			accentCircle = `<div class="palette-accent" style="background-color: ${palette.accent}">${palette.accent}</div>`;
 			prevAccentColor = palette.accent;
 		}
 		const cardHTML = `
 			${accentCircle}
-			<div class="palette-card" data-palette-id="${palette.id}">
+			<div class="palette-card ${!palette.isGoodPalette ? 'bad' : ''}" data-palette-id="${palette.id}">
 				<div class="palette-preview">
 					<div class="palette-bg" style="background-color: ${palette.bgColor}">
 						<div class="palette-text" style="color: ${palette.textColor}">Aa</div>
@@ -271,7 +278,7 @@ function generateAndDisplay() {
 				</div>
 			</div>
 		`;
-		const colorCategoryEl = palettesGrid.querySelector(`[data-color-name="${palette.colorName}"]`);
+		const colorCategoryEl = palettesGrid.querySelector(`[data-accent-color="${palette.accent}"]`);
 		if (colorCategoryEl) {
 			colorCategoryEl.insertAdjacentHTML('beforeend', cardHTML);
 		}

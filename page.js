@@ -171,14 +171,19 @@ class PagePainter {
 					if (colorName === 'textColor' || colorName === 'accentColor') {
 						const closestPaintedElement = el.parentElement.closest('[data-palette-var]');
 						let paintedParentPalette = null;
+						let paintedParentVar = null;
 						if (closestPaintedElement) {
-							const paintedParentVar = closestPaintedElement.getAttribute('data-palette-var');
+							paintedParentVar = closestPaintedElement.getAttribute('data-palette-var');
 							paintedParentPalette = paintedParentVar.includes('second')
 								? palette.secondary
 								: palette.primary;
 						}
 						if (paintedParentPalette) {
 							if (colorName === 'accentColor') {
+								el.setAttribute(
+									'data-palette-var',
+									paintedParentVar
+								);
 								el.style[styleName] = paintedParentPalette.buttonColor;
 							} else {
 								el.style[styleName] = paintedParentPalette.textColor;
